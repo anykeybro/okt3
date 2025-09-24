@@ -9,6 +9,7 @@
 - **Zabbix Agent** - агент для мониторинга хоста
 - **Zabbix Java Gateway** - шлюз для мониторинга Java приложений
 - **PostgreSQL** - база данных
+- **Nginx** - прокси-сервер для доступа к Zabbix по пути /zabbix
 
 ## Файлы конфигурации
 
@@ -53,11 +54,12 @@ yarn dev:full
 
 ## Доступ к сервисам (режим разработки)
 
-- **Веб-интерфейс Zabbix**: http://localhost:8081
+- **Веб-интерфейс Zabbix**: http://localhost/zabbix (через nginx прокси)
 - **Zabbix Server**: localhost:10051
 - **Zabbix Agent**: localhost:10050
 - **Java Gateway**: localhost:10052
 - **PostgreSQL**: localhost:5432
+- **Nginx**: localhost:80
 
 ### Данные для входа по умолчанию
 - **Логин**: Admin
@@ -125,6 +127,9 @@ yarn prod:zabbix
 - `logs/zabbix-server/` - логи сервера Zabbix
 - `logs/zabbix-web/` - логи веб-интерфейса
 - `logs/zabbix-agent/` - логи агента
+- `logs/nginx/` - логи nginx прокси (только для продакшена)
+
+Для разработки логи nginx хранятся в Docker volume `nginx_logs`.
 
 ## Резервное копирование
 
@@ -141,6 +146,16 @@ docker exec zabbix-postgres-prod pg_dump -U zabbix zabbix > ./backups/zabbix_bac
 - Размер кэша через переменные `ZBX_CACHESIZE`, `ZBX_HISTORYCACHESIZE`
 - Уровень отладки через `ZBX_DEBUGLEVEL`
 - Таймауты и лимиты через соответствующие переменные
+
+## Конфигурация Nginx
+
+Nginx настроен как прокси-сервер для Zabbix:
+- Доступ к Zabbix: `http://localhost/zabbix/`
+- Корневая страница автоматически перенаправляет на `/zabbix/`
+- Статические файлы кэшируются на 1 год
+- Страница статуса nginx: `http://localhost/nginx_status` (только для локальных подключений)
+
+Конфигурация находится в файле `nginx/nginx.conf`.
 
 ## Переменные окружения
 

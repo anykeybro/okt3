@@ -10,8 +10,15 @@ build/
 *.tsbuildinfo
 
 # Логи
-logs
+logs/
 *.log
+
+# Директории для Docker volumes и данных
+backups/
+ssl/
+
+# Конфигурационные файлы (кроме примеров)
+zabbix-config/zabbix.conf.php
 
 # Временные файлы
 .tmp/

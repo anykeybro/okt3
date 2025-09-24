@@ -65,16 +65,33 @@ services:
       PHP_TZ: ${PHP_TZ}
       ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE}
+      ZBX_BASEURL: /zabbix
     volumes:
       - zabbix_web_ssl:/etc/ssl/nginx
     networks:
       - zabbix-net
-    ports:
-      - "${ZABBIX_WEB_HTTP_PORT}:8080"
-      - "${ZABBIX_WEB_HTTPS_PORT}:8443"
+    # Убираем внешние порты, доступ только через nginx
+    expose:
+      - "8080"
+      - "8443"
     depends_on:
       - postgres-server
       - zabbix-server
+
+  # Nginx прокси для Zabbix
+  nginx:
+    image: nginx:alpine
+    container_name: ${NGINX_CONTAINER_NAME}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - zabbix-net
+    depends_on:
+      - zabbix-web
 
   # Zabbix Java Gateway
   zabbix-java-gateway:
@@ -123,6 +140,7 @@ volumes:
   zabbix_server_ssl_keys:
   zabbix_server_ssl_ca:
   zabbix_web_ssl:
+  nginx_logs:
 
 networks:
   zabbix-net:

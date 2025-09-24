@@ -94,15 +94,17 @@ services:
       PHP_TZ: ${PHP_TZ}
       ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE}
+      ZBX_BASEURL: /zabbix
     volumes:
       - zabbix_web_ssl:/etc/ssl/nginx
       - ./ssl:/etc/ssl/nginx/certs:ro
       - ./logs/zabbix-web:/var/log/nginx
     networks:
       - zabbix-net
-    ports:
-      - "${ZABBIX_WEB_HTTP_PORT}:8080"
-      - "${ZABBIX_WEB_HTTPS_PORT}:8443"
+    # Убираем внешние порты, доступ только через nginx
+    expose:
+      - "8080"
+      - "8443"
     depends_on:
       postgres-server:
         condition: service_healthy
@@ -110,6 +112,32 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx прокси для Zabbix (продакшен)
+  nginx:
+    image: nginx:alpine
+    container_name: ${NGINX_CONTAINER_NAME}
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - zabbix-net
+    depends_on:
+      zabbix-web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/nginx_status"]
       interval: 30s
       timeout: 10s
       retries: 3
