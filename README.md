@@ -1,6 +1,6 @@
-# Проект с Yarn Workspace
+# Проект с Yarn Workspace и мониторингом
 
-Этот проект использует Yarn Workspace для управления монорепозиторием с несколькими пакетами.
+Этот проект использует Yarn Workspace для управления монорепозиторием с несколькими пакетами и включает систему мониторинга на базе Zabbix и Grafana.
 
 ## Структура проекта
 
@@ -76,3 +76,35 @@ yarn workspace @workspace/shared add -D jest
 2. Добавьте `package.json` с именем в формате `@workspace/package-name`
 3. Убедитесь, что имя пакета уникально в рамках workspace
 4. Запустите `yarn install` для обновления зависимостей
+
+## Система мониторинга
+
+Проект включает полную систему мониторинга:
+
+### Zabbix
+- Сервер мониторинга для сбора метрик
+- Веб-интерфейс для управления
+- Доступ: http://localhost/zabbix/
+- Подробности в [ZABBIX_README.md](ZABBIX_README.md)
+
+### Grafana
+- Система визуализации данных из Zabbix
+- Доступ: http://localhost:3000 или http://localhost/grafana/
+- Подробности в [GRAFANA_README.md](GRAFANA_README.md)
+
+### Запуск мониторинга
+
+#### Разработка
+```bash
+docker-compose -f docker-compose.dev.yml --env-file .env.development up -d
+```
+
+#### Продакшен
+```bash
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
+```
+
+### Доступ к сервисам
+- Zabbix: http://localhost/zabbix/ (Admin/zabbix)
+- Grafana: http://localhost:3000 (admin/admin для разработки)
+- PostgreSQL: localhost:5432
