@@ -1,0 +1,197 @@
+version: '3.8'
+
+services:
+  # База данных PostgreSQL для Zabbix (продакшен)
+  postgres-server:
+    image: postgres:15-alpine
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - zabbix-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Zabbix Server (продакшен)
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-6.4-latest
+    container_name: ${ZABBIX_SERVER_CONTAINER_NAME}
+    restart: always
+    environment:
+      DB_SERVER_HOST: postgres-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      ZBX_JAVAGATEWAY: zabbix-java-gateway
+      ZBX_JAVAGATEWAY_ENABLE: "true"
+      ZBX_JAVAGATEWAYPORT: ${ZABBIX_JAVA_GATEWAY_PORT}
+      ZBX_DEBUGLEVEL: ${ZBX_DEBUGLEVEL}
+      ZBX_CACHESIZE: ${ZBX_CACHESIZE}
+      ZBX_HISTORYCACHESIZE: ${ZBX_HISTORYCACHESIZE}
+      ZBX_HISTORYINDEXCACHESIZE: ${ZBX_HISTORYINDEXCACHESIZE}
+      ZBX_TRENDCACHESIZE: ${ZBX_TRENDCACHESIZE}
+      ZBX_VALUECACHESIZE: ${ZBX_VALUECACHESIZE}
+      ZBX_ENABLE_SNMP_TRAPS: ${ZBX_ENABLE_SNMP_TRAPS}
+      ZBX_STARTPOLLERS: ${ZBX_STARTPOLLERS}
+      ZBX_STARTPOLLERSUNREACHABLE: ${ZBX_STARTPOLLERSUNREACHABLE}
+      ZBX_STARTTRAPPERS: ${ZBX_STARTTRAPPERS}
+      ZBX_STARTPINGERS: ${ZBX_STARTPINGERS}
+      ZBX_STARTDISCOVERERS: ${ZBX_STARTDISCOVERERS}
+      ZBX_STARTHTTPPOLLERS: ${ZBX_STARTHTTPPOLLERS}
+    volumes:
+      - zabbix_server_data:/var/lib/zabbix
+      - zabbix_server_enc:/var/lib/zabbix/enc
+      - zabbix_server_ssh_keys:/var/lib/zabbix/ssh_keys
+      - zabbix_server_ssl_certs:/var/lib/zabbix/ssl/certs
+      - zabbix_server_ssl_keys:/var/lib/zabbix/ssl/keys
+      - zabbix_server_ssl_ca:/var/lib/zabbix/ssl/ssl_ca
+      - ./logs/zabbix-server:/var/log/zabbix
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_SERVER_PORT}:10051"
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+      zabbix-java-gateway:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "zabbix_server", "-R", "config_cache_reload"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Zabbix Web Interface (продакшен)
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-6.4-latest
+    container_name: ${ZABBIX_WEB_CONTAINER_NAME}
+    restart: always
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: postgres-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PHP_TZ: ${PHP_TZ}
+      ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE}
+    volumes:
+      - zabbix_web_ssl:/etc/ssl/nginx
+      - ./ssl:/etc/ssl/nginx/certs:ro
+      - ./logs/zabbix-web:/var/log/nginx
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_WEB_HTTP_PORT}:8080"
+      - "${ZABBIX_WEB_HTTPS_PORT}:8443"
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+      zabbix-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Zabbix Java Gateway (продакшен)
+  zabbix-java-gateway:
+    image: zabbix/zabbix-java-gateway:alpine-6.4-latest
+    container_name: ${ZABBIX_JAVA_GATEWAY_CONTAINER_NAME}
+    restart: always
+    environment:
+      ZBX_DEBUGLEVEL: ${ZBX_JAVA_GATEWAY_DEBUG_LEVEL}
+      ZBX_TIMEOUT: ${ZBX_JAVA_GATEWAY_TIMEOUT}
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_JAVA_GATEWAY_PORT}:10052"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "10052"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Zabbix Agent (продакшен)
+  zabbix-agent:
+    image: zabbix/zabbix-agent:alpine-6.4-latest
+    container_name: ${ZABBIX_AGENT_CONTAINER_NAME}
+    restart: always
+    environment:
+      ZBX_HOSTNAME: ${ZBX_HOSTNAME}
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SERVER_PORT: ${ZABBIX_SERVER_PORT}
+      ZBX_DEBUGLEVEL: ${ZBX_AGENT_DEBUG_LEVEL}
+      ZBX_PASSIVE_ALLOW: ${ZBX_PASSIVE_ALLOW}
+      ZBX_ACTIVE_ALLOW: ${ZBX_ACTIVE_ALLOW}
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /dev:/host/dev:ro
+      - ./logs/zabbix-agent:/var/log/zabbix
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_AGENT_PORT}:10050"
+    depends_on:
+      zabbix-server:
+        condition: service_healthy
+    privileged: true
+    pid: "host"
+    healthcheck:
+      test: ["CMD", "zabbix_agentd", "-t", "agent.ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+  zabbix_server_data:
+  zabbix_server_enc:
+  zabbix_server_ssh_keys:
+  zabbix_server_ssl_certs:
+  zabbix_server_ssl_keys:
+  zabbix_server_ssl_ca:
+  zabbix_web_ssl:
+
+networks:
+  zabbix-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -7,9 +7,18 @@
     "packages/*"
   ],
   "scripts": {
+    "setup": "setup-env.cmd",
     "build": "yarn workspaces run build",
     "test": "yarn workspaces run test",
-    "dev": "yarn workspaces run dev",
+    "dev": "yarn dev:zabbix && yarn workspaces run dev",
+    "dev:app": "yarn workspaces run dev",
+    "dev:zabbix": "docker-compose --env-file .env.development -f docker-compose.dev.yml up -d",
+    "dev:zabbix:logs": "docker-compose --env-file .env.development -f docker-compose.dev.yml logs -f",
+    "dev:zabbix:stop": "docker-compose --env-file .env.development -f docker-compose.dev.yml down",
+    "dev:full": "yarn dev:zabbix && yarn dev:app",
+    "prod:zabbix": "docker-compose --env-file .env.production -f docker-compose.production.yml up -d",
+    "prod:zabbix:logs": "docker-compose --env-file .env.production -f docker-compose.production.yml logs -f",
+    "prod:zabbix:stop": "docker-compose --env-file .env.production -f docker-compose.production.yml down",
     "clean": "yarn workspaces run clean"
   },
   "devDependencies": {

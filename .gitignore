@@ -30,6 +30,8 @@ Thumbs.db
 # Переменные окружения
 .env
 .env.local
+.env.development
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
@@ -44,3 +46,6 @@ coverage/
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+legacy-apps/

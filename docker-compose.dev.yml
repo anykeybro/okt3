@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # База данных PostgreSQL для Zabbix
+  postgres-server:
+    image: postgres:15-alpine
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zabbix-net
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+  # Zabbix Server
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-6.4-latest
+    container_name: ${ZABBIX_SERVER_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: postgres-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      ZBX_JAVAGATEWAY: zabbix-java-gateway
+      ZBX_JAVAGATEWAY_ENABLE: "true"
+      ZBX_JAVAGATEWAYPORT: ${ZABBIX_JAVA_GATEWAY_PORT}
+      ZBX_DEBUGLEVEL: ${ZBX_DEBUGLEVEL}
+      ZBX_CACHESIZE: ${ZBX_CACHESIZE}
+      ZBX_HISTORYCACHESIZE: ${ZBX_HISTORYCACHESIZE}
+      ZBX_HISTORYINDEXCACHESIZE: ${ZBX_HISTORYINDEXCACHESIZE}
+      ZBX_TRENDCACHESIZE: ${ZBX_TRENDCACHESIZE}
+      ZBX_VALUECACHESIZE: ${ZBX_VALUECACHESIZE}
+    volumes:
+      - zabbix_server_data:/var/lib/zabbix
+      - zabbix_server_enc:/var/lib/zabbix/enc
+      - zabbix_server_ssh_keys:/var/lib/zabbix/ssh_keys
+      - zabbix_server_ssl_certs:/var/lib/zabbix/ssl/certs
+      - zabbix_server_ssl_keys:/var/lib/zabbix/ssl/keys
+      - zabbix_server_ssl_ca:/var/lib/zabbix/ssl/ssl_ca
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_SERVER_PORT}:10051"
+    depends_on:
+      - postgres-server
+      - zabbix-java-gateway
+
+  # Zabbix Web Interface
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-6.4-latest
+    container_name: ${ZABBIX_WEB_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: postgres-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PHP_TZ: ${PHP_TZ}
+      ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE}
+    volumes:
+      - zabbix_web_ssl:/etc/ssl/nginx
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_WEB_HTTP_PORT}:8080"
+      - "${ZABBIX_WEB_HTTPS_PORT}:8443"
+    depends_on:
+      - postgres-server
+      - zabbix-server
+
+  # Zabbix Java Gateway
+  zabbix-java-gateway:
+    image: zabbix/zabbix-java-gateway:alpine-6.4-latest
+    container_name: ${ZABBIX_JAVA_GATEWAY_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      ZBX_DEBUGLEVEL: ${ZBX_JAVA_GATEWAY_DEBUG_LEVEL}
+      ZBX_TIMEOUT: ${ZBX_JAVA_GATEWAY_TIMEOUT}
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_JAVA_GATEWAY_PORT}:10052"
+
+  # Zabbix Agent
+  zabbix-agent:
+    image: zabbix/zabbix-agent:alpine-6.4-latest
+    container_name: ${ZABBIX_AGENT_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      ZBX_HOSTNAME: ${ZBX_HOSTNAME}
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SERVER_PORT: ${ZABBIX_SERVER_PORT}
+      ZBX_DEBUGLEVEL: ${ZBX_AGENT_DEBUG_LEVEL}
+      ZBX_PASSIVE_ALLOW: ${ZBX_PASSIVE_ALLOW}
+      ZBX_ACTIVE_ALLOW: ${ZBX_ACTIVE_ALLOW}
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /dev:/host/dev:ro
+    networks:
+      - zabbix-net
+    ports:
+      - "${ZABBIX_AGENT_PORT}:10050"
+    depends_on:
+      - zabbix-server
+    privileged: true
+    pid: "host"
+
+volumes:
+  postgres_data:
+  zabbix_server_data:
+  zabbix_server_enc:
+  zabbix_server_ssh_keys:
+  zabbix_server_ssl_certs:
+  zabbix_server_ssl_keys:
+  zabbix_server_ssl_ca:
+  zabbix_web_ssl:
+
+networks:
+  zabbix-net:
+    driver: bridge
