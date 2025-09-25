@@ -165,6 +165,8 @@ services:
   app-web-billing:
     image: nginx:alpine
     container_name: app-web-billing-proxy-dev
+    environment:
+      - NEXT_PUBLIC_BASE_PATH=/billing
     restart: unless-stopped
     volumes:
       - ./nginx/billing-proxy.conf:/etc/nginx/nginx.conf:ro
