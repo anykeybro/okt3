@@ -35,6 +35,13 @@ yarn test
 yarn dev
 ```
 
+Эта команда запустит:
+- Docker контейнеры (Zabbix, Grafana, PostgreSQL, nginx)
+- Все локальные dev серверы:
+  - app-web на порту 3003 (главное приложение)
+  - app-server на порту 3001 (API сервер)
+  - app-web-billing на порту 3002 (биллинг)
+
 ### Очистка сборочных файлов
 ```bash
 yarn clean
@@ -105,6 +112,13 @@ docker-compose -f docker-compose.production.yml --env-file .env.production up -d
 ```
 
 ### Доступ к сервисам
-- Zabbix: http://localhost/zabbix/ (Admin/zabbix)
-- Grafana: http://localhost:3000 (admin/admin для разработки)
+- **App Web (главная)**: http://localhost/
+- **App Server API**: http://localhost/api/ (например: http://localhost/api/health)
+- **App Web Billing**: http://localhost/billing
+- **Zabbix**: http://localhost/zabbix/ (Admin/zabbix)
+- **Grafana**: http://localhost/grafana/ (admin/admin для разработки)
 - PostgreSQL: localhost:5432
+
+### Подробная документация
+- [Руководство по разработке](docs/DEVELOPMENT_GUIDE.md)
+- [Настройка App Web Billing](docs/APP_WEB_BILLING_DEV_SETUP.md)

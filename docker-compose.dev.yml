@@ -93,6 +93,9 @@ services:
     depends_on:
       - zabbix-web
       - grafana
+      - app-web-billing
+      - app-server
+      - app-web
 
   # Zabbix Java Gateway
   zabbix-java-gateway:
@@ -157,6 +160,48 @@ services:
     depends_on:
       - zabbix-server
       - zabbix-web
+
+  # App Web Billing - проксирование к локальному dev серверу
+  app-web-billing:
+    image: nginx:alpine
+    container_name: app-web-billing-proxy-dev
+    restart: unless-stopped
+    volumes:
+      - ./nginx/billing-proxy.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - zabbix-net
+    expose:
+      - "80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # App Server - проксирование к локальному dev серверу
+  app-server:
+    image: nginx:alpine
+    container_name: app-server-proxy-dev
+    restart: unless-stopped
+    volumes:
+      - ./nginx/server-proxy.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - zabbix-net
+    expose:
+      - "80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # App Web - проксирование к локальному dev серверу
+  app-web:
+    image: nginx:alpine
+    container_name: app-web-proxy-dev
+    restart: unless-stopped
+    volumes:
+      - ./nginx/web-proxy.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - zabbix-net
+    expose:
+      - "80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   postgres_data:
