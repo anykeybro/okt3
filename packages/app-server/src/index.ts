@@ -54,6 +54,7 @@ import { DeviceService, DeviceController, createDeviceRoutes, MikroTikKafkaConsu
 import { createPaymentRoutes } from './modules/payments';
 import { createBillingRoutes, BillingService } from './modules/billing';
 import { createNotificationRoutes } from './modules/notifications';
+import { dashboardRoutes } from './modules/dashboard';
 import KafkaService from './kafka';
 
 // Инициализация сервисов
@@ -104,7 +105,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/dashboard', (req, res) => res.json({ message: 'Dashboard module - coming soon' }));
+app.use('/api/dashboard', dashboardRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

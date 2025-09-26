@@ -11,3 +11,6 @@ export * from './clients';
 
 // Модуль управления устройствами MikroTik
 export * from './devices';
+
+// Модуль панели управления и аналитики
+export * from './dashboard';

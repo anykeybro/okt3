@@ -107,6 +107,17 @@ export const config = {
     grafanaUrl: process.env.GRAFANA_URL || 'http://localhost/grafana',
     healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000', 10), // 30 секунд
   },
+
+  // Dashboard
+  dashboard: {
+    cacheDefaultTtl: parseInt(process.env.DASHBOARD_CACHE_TTL || '300', 10), // 5 минут
+    maxActivityItems: parseInt(process.env.DASHBOARD_MAX_ACTIVITY || '50', 10),
+    maxTopClients: parseInt(process.env.DASHBOARD_MAX_TOP_CLIENTS || '50', 10),
+    maxLowBalanceClients: parseInt(process.env.DASHBOARD_MAX_LOW_BALANCE || '50', 10),
+    lowBalanceThreshold: parseFloat(process.env.DASHBOARD_LOW_BALANCE_THRESHOLD || '100'), // 100 рублей
+    maxDateRangeDays: parseInt(process.env.DASHBOARD_MAX_DATE_RANGE_DAYS || '365', 10), // 1 год
+    cacheCleanupInterval: parseInt(process.env.DASHBOARD_CACHE_CLEANUP_INTERVAL || '300000', 10), // 5 минут
+  },
 };
 
 // Валидация обязательных переменных
