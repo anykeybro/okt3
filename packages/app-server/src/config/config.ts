@@ -92,6 +92,15 @@ export const config = {
     rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
   },
 
+  // MikroTik
+  mikrotik: {
+    defaultPort: parseInt(process.env.MIKROTIK_DEFAULT_PORT || '8728', 10),
+    defaultTimeout: parseInt(process.env.MIKROTIK_DEFAULT_TIMEOUT || '10000', 10), // 10 секунд
+    healthCheckInterval: parseInt(process.env.MIKROTIK_HEALTH_CHECK_INTERVAL || '300000', 10), // 5 минут
+    maxRetries: parseInt(process.env.MIKROTIK_MAX_RETRIES || '3', 10),
+    retryDelay: parseInt(process.env.MIKROTIK_RETRY_DELAY || '5000', 10), // 5 секунд
+  },
+
   // Мониторинг
   monitoring: {
     zabbixUrl: process.env.ZABBIX_URL || 'http://localhost/zabbix',

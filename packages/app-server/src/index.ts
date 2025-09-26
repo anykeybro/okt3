@@ -49,10 +49,41 @@ app.get('/health', async (req, res) => {
 import { authRoutes } from './modules/auth';
 import { tariffRoutes } from './modules/tariffs';
 import { clientsRoutes } from './modules/clients';
+import { DeviceService, DeviceController, createDeviceRoutes, MikroTikKafkaConsumer } from './modules/devices';
+import KafkaService from './kafka';
+
+// Инициализация сервисов
+const kafkaService = new KafkaService();
+const deviceService = new DeviceService(prisma, kafkaService);
+const deviceController = new DeviceController(deviceService);
+const deviceRoutes = createDeviceRoutes(deviceController);
+
+// Инициализация Kafka consumer для MikroTik
+const mikrotikConsumer = new MikroTikKafkaConsumer(prisma, kafkaService);
+
+// Запуск Kafka сервисов
+async function initializeKafka() {
+  try {
+    const isKafkaAvailable = await kafkaService.testConnection();
+    if (isKafkaAvailable) {
+      await kafkaService.connectProducer();
+      await mikrotikConsumer.start();
+      console.log('✅ Kafka сервисы инициализированы');
+    } else {
+      console.log('⚠️ Kafka недоступен, работаем без Kafka');
+    }
+  } catch (error) {
+    console.error('❌ Ошибка инициализации Kafka:', error);
+  }
+}
+
+// Инициализируем Kafka асинхронно
+initializeKafka();
+
 app.use('/api/auth', authRoutes);
 app.use('/api/tariffs', tariffRoutes);
 app.use('/api/clients', clientsRoutes);
-app.use('/api/devices', (req, res) => res.json({ message: 'Devices module - coming soon' }));
+app.use('/api/devices', deviceRoutes);
 app.use('/api/requests', (req, res) => res.json({ message: 'Requests module - coming soon' }));
 app.use('/api/payments', (req, res) => res.json({ message: 'Payments module - coming soon' }));
 app.use('/api/billing', (req, res) => res.json({ message: 'Billing module - coming soon' }));
@@ -73,12 +104,16 @@ app.use(errorHandler);
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('Получен сигнал SIGTERM, завершаем работу...');
+  await mikrotikConsumer.stop();
+  await kafkaService.disconnect();
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('Получен сигнал SIGINT, завершаем работу...');
+  await mikrotikConsumer.stop();
+  await kafkaService.disconnect();
   await prisma.$disconnect();
   process.exit(0);
 });
