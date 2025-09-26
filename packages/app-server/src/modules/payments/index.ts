@@ -1,2 +1,6 @@
 // Модуль платежной системы
-// Файлы будут созданы в следующих задачах
+export { PaymentsService } from './payments.service';
+export { PaymentsController } from './payments.controller';
+export { RobokassaService } from './robokassa.service';
+export { createPaymentRoutes } from './payments.routes';
+export * from './payments.types';
