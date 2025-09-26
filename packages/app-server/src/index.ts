@@ -49,6 +49,7 @@ app.get('/health', async (req, res) => {
 import { authRoutes } from './modules/auth';
 import { tariffRoutes } from './modules/tariffs';
 import { clientsRoutes } from './modules/clients';
+import { requestRoutes } from './modules/requests';
 import { DeviceService, DeviceController, createDeviceRoutes, MikroTikKafkaConsumer } from './modules/devices';
 import KafkaService from './kafka';
 
@@ -84,7 +85,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tariffs', tariffRoutes);
 app.use('/api/clients', clientsRoutes);
 app.use('/api/devices', deviceRoutes);
-app.use('/api/requests', (req, res) => res.json({ message: 'Requests module - coming soon' }));
+app.use('/api/requests', requestRoutes);
 app.use('/api/payments', (req, res) => res.json({ message: 'Payments module - coming soon' }));
 app.use('/api/billing', (req, res) => res.json({ message: 'Billing module - coming soon' }));
 app.use('/api/notifications', (req, res) => res.json({ message: 'Notifications module - coming soon' }));

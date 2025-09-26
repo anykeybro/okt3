@@ -1,2 +1,6 @@
 // Модуль системы заявок (CRM)
-// Файлы будут созданы в следующих задачах
+export { RequestsService } from './requests.service';
+export { RequestsController } from './requests.controller';
+export { requestRoutes } from './routes';
+export * from './types';
+export * from './validation';
