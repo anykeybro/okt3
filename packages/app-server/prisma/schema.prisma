@@ -1,4 +1,4 @@
-// Схема Prisma для MongoDB
+// Схема Prisma для MongoDB - Биллинг-система OK-Telecom
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,12 +8,286 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Системные пользователи (администраторы)
+model SystemUser {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  username     String   @unique
+  passwordHash String
+  roleId       String   @db.ObjectId
+  role         Role     @relation(fields: [roleId], references: [id])
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  @@map("users")
+  // Связи
+  processedPayments Payment[] @relation("ProcessedBy")
+  assignedRequests  Request[] @relation("AssignedTo")
+
+  @@map("system_users")
+}
+
+// Роли системы
+model Role {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String       @unique
+  description String?
+  permissions Permission[]
+  users       SystemUser[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("roles")
+}
+
+// Права доступа
+model Permission {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  resource String   // users, clients, tariffs, etc.
+  actions  String[] // create, read, update, delete
+  roleId   String   @db.ObjectId
+  role     Role     @relation(fields: [roleId], references: [id])
+
+  @@map("permissions")
+}
+
+// Абоненты
+model Client {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  firstName   String
+  lastName    String
+  middleName  String?
+  phones      String[]
+  email       String?
+  telegramId  String?
+  address     String?
+  coordinates Json? // {latitude: number, longitude: number}
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Связи
+  accounts      Account[]
+  requests      Request[]
+  notifications Notification[]
+
+  @@map("clients")
+}
+
+// Лицевые счета
+model Account {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  accountNumber  String        @unique
+  clientId       String        @db.ObjectId
+  client         Client        @relation(fields: [clientId], references: [id])
+  tariffId       String        @db.ObjectId
+  tariff         Tariff        @relation(fields: [tariffId], references: [id])
+  balance        Float         @default(0)
+  status         AccountStatus @default(ACTIVE)
+  macAddress     String?
+  poolName       String        @default("default")
+  blockThreshold Float         @default(0) // Порог для автоблокировки
+  deviceId       String?       @db.ObjectId
+  device         Device?       @relation(fields: [deviceId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Связи
+  payments Payment[]
+
+  @@map("accounts")
+}
+
+// Услуги
+model Service {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String      @unique
+  description String?
+  type        ServiceType
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("services")
+}
+
+// Тарифные планы
+model Tariff {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  name             String       @unique
+  description      String?
+  price            Float
+  billingType      BillingType
+  speedDown        Int // Мбит/с
+  speedUp          Int // Мбит/с
+  serviceIds       String[]     @db.ObjectId // Массив ID услуг
+  groupId          String?      @db.ObjectId
+  group            TariffGroup? @relation(fields: [groupId], references: [id])
+  isVisibleInLK    Boolean      @default(true)
+  notificationDays Int          @default(3) // За сколько дней уведомлять
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Связи
+  accounts Account[]
+
+  @@map("tariffs")
+}
+
+// Группы тарифов
+model TariffGroup {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Связи
+  tariffs Tariff[]
+
+  @@map("tariff_groups")
+}
+
+// Сетевые устройства
+model Device {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  ipAddress    String       @unique
+  username     String
+  passwordHash String
+  description  String?
+  status       DeviceStatus @default(OFFLINE)
+  lastCheck    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Связи
+  accounts Account[]
+
+  @@map("devices")
+}
+
+// Заявки
+model Request {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  clientId        String?       @db.ObjectId
+  client          Client?       @relation(fields: [clientId], references: [id])
+  address         String
+  firstName       String
+  lastName        String
+  phone           String
+  desiredServices String[] // JSON массив
+  status          RequestStatus @default(NEW)
+  assignedToId    String?       @db.ObjectId
+  assignedTo      SystemUser?   @relation("AssignedTo", fields: [assignedToId], references: [id])
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("requests")
+}
+
+// Платежи
+model Payment {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  accountId     String        @db.ObjectId
+  account       Account       @relation(fields: [accountId], references: [id])
+  amount        Float
+  source        PaymentSource
+  externalId    String? // ID от Robokassa
+  comment       String?
+  processedById String?       @db.ObjectId
+  processedBy   SystemUser?   @relation("ProcessedBy", fields: [processedById], references: [id])
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  processedAt   DateTime?
+
+  @@map("payments")
+}
+
+// Уведомления
+model Notification {
+  id         String               @id @default(auto()) @map("_id") @db.ObjectId
+  clientId   String               @db.ObjectId
+  client     Client               @relation(fields: [clientId], references: [id])
+  type       NotificationType
+  channel    NotificationChannel
+  message    String
+  status     NotificationStatus   @default(PENDING)
+  externalId String? // ID сообщения от внешнего сервиса
+  sentAt     DateTime?
+  createdAt  DateTime             @default(now())
+
+  @@map("notifications")
+}
+
+// Шаблоны уведомлений
+model NotificationTemplate {
+  id       String              @id @default(auto()) @map("_id") @db.ObjectId
+  type     NotificationType
+  channel  NotificationChannel
+  template String // С плейсхолдерами
+  isActive Boolean             @default(true)
+
+  @@unique([type, channel])
+  @@map("notification_templates")
+}
+
+// Перечисления
+enum AccountStatus {
+  ACTIVE
+  BLOCKED
+  SUSPENDED
+}
+
+enum ServiceType {
+  INTERNET
+  IPTV
+  CLOUD_STORAGE
+}
+
+enum BillingType {
+  PREPAID_MONTHLY
+  HOURLY
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+}
+
+enum RequestStatus {
+  NEW
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentSource {
+  MANUAL
+  ROBOKASSA
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum NotificationType {
+  WELCOME
+  PAYMENT
+  LOW_BALANCE
+  BLOCKED
+  UNBLOCKED
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
 }
