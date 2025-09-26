@@ -52,6 +52,7 @@ import { clientsRoutes } from './modules/clients';
 import { requestRoutes } from './modules/requests';
 import { DeviceService, DeviceController, createDeviceRoutes, MikroTikKafkaConsumer } from './modules/devices';
 import { createPaymentRoutes } from './modules/payments';
+import { createBillingRoutes, BillingService } from './modules/billing';
 import KafkaService from './kafka';
 
 // Инициализация сервисов
@@ -60,13 +61,18 @@ const deviceService = new DeviceService(prisma, kafkaService);
 const deviceController = new DeviceController(deviceService);
 const deviceRoutes = createDeviceRoutes(deviceController);
 const paymentRoutes = createPaymentRoutes(prisma);
+const billingRoutes = createBillingRoutes(prisma);
 
 // Инициализация Kafka consumer для MikroTik
 const mikrotikConsumer = new MikroTikKafkaConsumer(prisma, kafkaService);
 
-// Запуск Kafka сервисов
-async function initializeKafka() {
+// Инициализация биллингового сервиса
+const billingService = new BillingService(prisma);
+
+// Запуск Kafka сервисов и биллинга
+async function initializeServices() {
   try {
+    // Инициализация Kafka
     const isKafkaAvailable = await kafkaService.testConnection();
     if (isKafkaAvailable) {
       await kafkaService.connectProducer();
@@ -75,13 +81,18 @@ async function initializeKafka() {
     } else {
       console.log('⚠️ Kafka недоступен, работаем без Kafka');
     }
+
+    // Запуск планировщика биллинга
+    billingService.startScheduler();
+    console.log('✅ Планировщик биллинга запущен');
+
   } catch (error) {
-    console.error('❌ Ошибка инициализации Kafka:', error);
+    console.error('❌ Ошибка инициализации сервисов:', error);
   }
 }
 
-// Инициализируем Kafka асинхронно
-initializeKafka();
+// Инициализируем сервисы асинхронно
+initializeServices();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tariffs', tariffRoutes);
@@ -89,7 +100,7 @@ app.use('/api/clients', clientsRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/billing', (req, res) => res.json({ message: 'Billing module - coming soon' }));
+app.use('/api/billing', billingRoutes);
 app.use('/api/notifications', (req, res) => res.json({ message: 'Notifications module - coming soon' }));
 app.use('/api/dashboard', (req, res) => res.json({ message: 'Dashboard module - coming soon' }));
 
@@ -107,6 +118,7 @@ app.use(errorHandler);
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('Получен сигнал SIGTERM, завершаем работу...');
+  billingService.stopScheduler();
   await mikrotikConsumer.stop();
   await kafkaService.disconnect();
   await prisma.$disconnect();
@@ -115,6 +127,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('Получен сигнал SIGINT, завершаем работу...');
+  billingService.stopScheduler();
   await mikrotikConsumer.stop();
   await kafkaService.disconnect();
   await prisma.$disconnect();

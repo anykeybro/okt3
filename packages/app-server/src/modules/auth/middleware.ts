@@ -7,6 +7,11 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   next();
 };
 
+export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+  // Временная заглушка - пропускаем все запросы
+  next();
+};
+
 export const requirePermission = (resource: string, action: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     // Временная заглушка - пропускаем все запросы
