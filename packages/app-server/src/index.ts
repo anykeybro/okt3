@@ -8,8 +8,29 @@ import { PrismaClient } from '@prisma/client';
 dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
 const PORT = process.env.PORT || 3001;
+
+// Функция для проверки подключения к MongoDB
+async function connectToDatabase() {
+  try {
+    await prisma.$connect();
+    console.log('✅ Подключение к MongoDB реплике успешно установлено');
+    console.log(`📊 База данных: ${process.env.MONGODB_DATABASE}`);
+    console.log(`🔗 Реплика сет: ${process.env.MONGODB_REPLICA_SET_NAME}`);
+    
+    // Проверяем подключение к базе данных
+    await prisma.$runCommandRaw({
+      ping: 1
+    });
+    console.log('🔄 Подключение к MongoDB успешно!');
+  } catch (error) {
+    console.error('❌ Ошибка подключения к MongoDB:', error);
+    process.exit(1);
+  }
+}
 
 // Middleware
 app.use(helmet());
@@ -32,8 +53,18 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Запуск сервера
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
+async function startServer() {
+  await connectToDatabase();
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Сервер запущен на порту ${PORT}`);
+    console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('❌ Ошибка запуска сервера:', error);
+  process.exit(1);
 });
 
 // Graceful shutdown

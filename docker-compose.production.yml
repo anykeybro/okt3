@@ -209,6 +209,119 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # MongoDB Primary (реплика 1) - продакшен
+  mongodb-primary:
+    image: mongo:7.0
+    container_name: mongodb-primary-prod
+    restart: always
+    command: mongod --replSet ${MONGODB_REPLICA_SET_NAME} --keyFile /etc/mongodb-keyfile --bind_ip_all
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
+    volumes:
+      - mongodb_primary_data:/data/db
+      - ./mongodb-keyfile:/etc/mongodb-keyfile:ro
+      - ./logs/mongodb-primary:/var/log/mongodb
+      - ./backups/mongodb:/backups
+    networks:
+      - zabbix-net
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MongoDB Secondary (реплика 2) - продакшен
+  mongodb-secondary:
+    image: mongo:7.0
+    container_name: mongodb-secondary-prod
+    restart: always
+    command: mongod --replSet ${MONGODB_REPLICA_SET_NAME} --keyFile /etc/mongodb-keyfile --bind_ip_all
+    volumes:
+      - mongodb_secondary_data:/data/db
+      - ./mongodb-keyfile:/etc/mongodb-keyfile:ro
+      - ./logs/mongodb-secondary:/var/log/mongodb
+    networks:
+      - zabbix-net
+    ports:
+      - "27018:27017"
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MongoDB Arbiter (арбитр для реплики) - продакшен
+  mongodb-arbiter:
+    image: mongo:7.0
+    container_name: mongodb-arbiter-prod
+    restart: always
+    command: mongod --replSet ${MONGODB_REPLICA_SET_NAME} --keyFile /etc/mongodb-keyfile --bind_ip_all
+    volumes:
+      - mongodb_arbiter_data:/data/db
+      - ./mongodb-keyfile:/etc/mongodb-keyfile:ro
+      - ./logs/mongodb-arbiter:/var/log/mongodb
+    networks:
+      - zabbix-net
+    ports:
+      - "27019:27017"
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MongoDB Replica Set Initializer - продакшен
+  mongodb-setup:
+    image: mongo:7.0
+    container_name: mongodb-setup-prod
+    restart: "no"
+    networks:
+      - zabbix-net
+    volumes:
+      - ./scripts:/scripts:ro
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+      mongodb-secondary:
+        condition: service_healthy
+      mongodb-arbiter:
+        condition: service_healthy
+    command: >
+      bash -c "
+        sleep 20 &&
+        mongosh --host mongodb-primary:27017 -u ${MONGODB_ROOT_USERNAME} -p ${MONGODB_ROOT_PASSWORD} --authenticationDatabase admin /scripts/init-mongodb-replica.js
+      "
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # Grafana для визуализации данных из Zabbix (продакшен)
   grafana:
     image: grafana/grafana:latest
@@ -263,6 +376,9 @@ volumes:
   zabbix_web_ssl:
   grafana_data:
   grafana_logs:
+  mongodb_primary_data:
+  mongodb_secondary_data:
+  mongodb_arbiter_data:
 
 networks:
   zabbix-net:
