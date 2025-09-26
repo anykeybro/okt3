@@ -2,3 +2,6 @@
 
 // Модуль тарифов и услуг
 export * from './tariffs';
+
+// Модуль управления абонентами
+export * from './clients';
