@@ -1,8 +1,14 @@
 // Конфигурация приложения
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Загружаем переменные окружения
-dotenv.config();
+// Определяем путь к корню проекта (3 уровня вверх от packages/app-server/src)
+const rootPath = path.resolve(__dirname, '../../../../');
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+const envPath = path.join(rootPath, envFile);
+
+dotenv.config({ path: envPath });
 
 export const config = {
   // Настройки сервера

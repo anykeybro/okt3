@@ -4,7 +4,7 @@
   "description": "Node.js сервер с TypeScript и Prisma для MongoDB",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "cross-env NODE_ENV=development tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
@@ -39,6 +39,7 @@
     "@types/node": "^20.10.0",
     "@types/node-cron": "3.0.11",
     "@types/supertest": "6.0.3",
+    "cross-env": "10.0.0",
     "jest": "^29.7.0",
     "prisma": "^5.7.0",
     "supertest": "7.1.4",
