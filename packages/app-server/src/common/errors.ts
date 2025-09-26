@@ -1,14 +1,24 @@
 // Кастомные классы ошибок
 export class ValidationError extends Error {
-  constructor(message: string, public field: string) {
+  public errors: string[];
+  
+  constructor(message: string, errors?: string[] | string) {
     super(message);
     this.name = 'ValidationError';
+    
+    if (Array.isArray(errors)) {
+      this.errors = errors;
+    } else if (typeof errors === 'string') {
+      this.errors = [errors];
+    } else {
+      this.errors = [];
+    }
   }
 }
 
 export class NotFoundError extends Error {
-  constructor(resource: string, id: string) {
-    super(`${resource} с ID ${id} не найден`);
+  constructor(message: string) {
+    super(message);
     this.name = 'NotFoundError';
   }
 }
@@ -38,5 +48,12 @@ export class ForbiddenError extends Error {
   constructor(message: string = 'Недостаточно прав доступа') {
     super(message);
     this.name = 'ForbiddenError';
+  }
+}
+
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConflictError';
   }
 }

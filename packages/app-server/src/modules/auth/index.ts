@@ -1,7 +1,13 @@
-// Экспорт модуля аутентификации
-export * from './auth.controller';
-export * from './auth.service';
-export * from './auth.middleware';
-export * from './auth.types';
-export * from './auth.validation';
-export { default as authRoutes } from './auth.routes';
+// Временная заглушка для auth модуля
+// Будет реализована в следующих задачах
+import { Router } from 'express';
+
+const router = Router();
+
+// Временная заглушка
+router.get('/', (req, res) => {
+  res.json({ message: 'Auth module - coming soon' });
+});
+
+export { router as authRoutes };
+export * from './middleware';

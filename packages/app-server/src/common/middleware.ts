@@ -15,7 +15,7 @@ export const errorHandler = (
     return res.status(400).json({
       error: 'Ошибка валидации',
       message: error.message,
-      field: error.field,
+      errors: error.errors,
     });
   }
 

@@ -47,9 +47,10 @@ app.get('/health', async (req, res) => {
 
 // API маршруты
 import { authRoutes } from './modules/auth';
+import { tariffRoutes } from './modules/tariffs';
 app.use('/api/auth', authRoutes);
+app.use('/api/tariffs', tariffRoutes);
 app.use('/api/clients', (req, res) => res.json({ message: 'Clients module - coming soon' }));
-app.use('/api/tariffs', (req, res) => res.json({ message: 'Tariffs module - coming soon' }));
 app.use('/api/devices', (req, res) => res.json({ message: 'Devices module - coming soon' }));
 app.use('/api/requests', (req, res) => res.json({ message: 'Requests module - coming soon' }));
 app.use('/api/payments', (req, res) => res.json({ message: 'Payments module - coming soon' }));
