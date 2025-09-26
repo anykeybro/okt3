@@ -45,8 +45,9 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// API маршруты (будут добавлены в следующих задачах)
-app.use('/api/auth', (req, res) => res.json({ message: 'Auth module - coming soon' }));
+// API маршруты
+import { authRoutes } from './modules/auth';
+app.use('/api/auth', authRoutes);
 app.use('/api/clients', (req, res) => res.json({ message: 'Clients module - coming soon' }));
 app.use('/api/tariffs', (req, res) => res.json({ message: 'Tariffs module - coming soon' }));
 app.use('/api/devices', (req, res) => res.json({ message: 'Devices module - coming soon' }));
