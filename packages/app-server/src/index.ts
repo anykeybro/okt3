@@ -53,6 +53,7 @@ import { requestRoutes } from './modules/requests';
 import { DeviceService, DeviceController, createDeviceRoutes, MikroTikKafkaConsumer } from './modules/devices';
 import { createPaymentRoutes } from './modules/payments';
 import { createBillingRoutes, BillingService } from './modules/billing';
+import { createNotificationRoutes } from './modules/notifications';
 import KafkaService from './kafka';
 
 // Инициализация сервисов
@@ -62,6 +63,7 @@ const deviceController = new DeviceController(deviceService);
 const deviceRoutes = createDeviceRoutes(deviceController);
 const paymentRoutes = createPaymentRoutes(prisma);
 const billingRoutes = createBillingRoutes(prisma);
+const notificationRoutes = createNotificationRoutes(prisma);
 
 // Инициализация Kafka consumer для MikroTik
 const mikrotikConsumer = new MikroTikKafkaConsumer(prisma, kafkaService);
@@ -101,7 +103,7 @@ app.use('/api/devices', deviceRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/billing', billingRoutes);
-app.use('/api/notifications', (req, res) => res.json({ message: 'Notifications module - coming soon' }));
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', (req, res) => res.json({ message: 'Dashboard module - coming soon' }));
 
 // 404 handler
