@@ -154,7 +154,23 @@ export const useTariffGroups = (params?: PaginationParams) => {
     queryKey: ['tariff-groups', params],
     queryFn: async () => {
       const response = await tariffsApi.getTariffGroups(params);
-      return response.data;
+      // Преобразуем ответ сервера в ожидаемый формат
+      if (response.success && response.data && response.pagination) {
+        return {
+          items: response.data,
+          total: response.pagination.total,
+          page: response.pagination.page,
+          pageSize: response.pagination.limit,
+          totalPages: response.pagination.totalPages,
+        };
+      }
+      return {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        totalPages: 0,
+      };
     },
     staleTime: config.refetch.staleTime,
   });

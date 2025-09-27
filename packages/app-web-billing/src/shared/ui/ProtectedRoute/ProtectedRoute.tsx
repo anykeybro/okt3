@@ -47,9 +47,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Проверяем права доступа
   if (requiredPermissions.length > 0 && user) {
-    const userPermissions = user.role.permissions.flatMap(p => 
-      p.actions.map(action => `${p.resource}:${action}`)
-    );
+    // Права доступа находятся прямо в объекте пользователя
+    const userPermissions = user.permissions || [];
     
     const hasPermission = requiredPermissions.every(permission => 
       userPermissions.includes(permission)

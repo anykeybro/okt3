@@ -41,10 +41,9 @@ export interface LoginResponse {
 export interface SystemUser {
   id: string;
   username: string;
-  role: Role;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  email: string;
+  role: string; // Роль как строка
+  permissions: string[]; // Массив прав доступа
 }
 
 export interface Role {

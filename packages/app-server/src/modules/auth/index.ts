@@ -35,7 +35,63 @@ router.get('/me', authMiddleware, (req, res) => {
       username: 'admin',
       email: 'admin@example.com',
       role: 'admin',
-      permissions: ['dashboard:read', 'clients:read', 'clients:write']
+      permissions: [
+        // Dashboard права
+        'dashboard:read',
+        
+        // Клиенты права
+        'clients:read',
+        'clients:write',
+        'clients:create',
+        'clients:update',
+        'clients:delete',
+        
+        // Тарифы права
+        'tariffs:read',
+        'tariffs:write',
+        'tariffs:create',
+        'tariffs:update',
+        'tariffs:delete',
+        
+        // Устройства права
+        'devices:read',
+        'devices:write',
+        'devices:create',
+        'devices:update',
+        'devices:delete',
+        
+        // Заявки права
+        'requests:read',
+        'requests:write',
+        'requests:create',
+        'requests:update',
+        'requests:delete',
+        
+        // Платежи права
+        'payments:read',
+        'payments:write',
+        'payments:create',
+        'payments:update',
+        'payments:delete',
+        
+        // Уведомления права
+        'notifications:read',
+        'notifications:write',
+        'notifications:create',
+        'notifications:update',
+        'notifications:delete',
+        
+        // Настройки права
+        'settings:read',
+        'settings:write',
+        'settings:create',
+        'settings:update',
+        'settings:delete',
+        
+        // Системные права
+        'system:admin',
+        'audit:read'
+      ]
     }
   });
 });

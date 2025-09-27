@@ -17,7 +17,11 @@ export const useAuth = () => {
     queryKey: ['auth', 'currentUser'],
     queryFn: async () => {
       const response = await authApi.getCurrentUser();
-      return response.data;
+      // Обрабатываем ответ от API
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error('Failed to get user data');
     },
     retry: false,
     staleTime: config.refetch.staleTime,

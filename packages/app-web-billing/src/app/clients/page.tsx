@@ -81,7 +81,7 @@ export default function ClientsPage() {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => {/* TODO: открыть форму создания */}}
+            onClick={() => {/* TODO: открыть форму создания */ }}
           >
             Добавить абонента
           </Button>
@@ -111,10 +111,10 @@ export default function ClientsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data?.items.map((client: Client) => (
+              {data?.items?.map((client: Client) => (
                 <TableRow key={client.id} hover>
                   <TableCell>
-                    {client.accounts.map(account => (
+                    {client.accounts?.map(account => (
                       <Chip
                         key={account.id}
                         label={account.accountNumber}
@@ -179,14 +179,14 @@ export default function ClientsPage() {
                     <IconButton
                       size="small"
                       title="Просмотр"
-                      onClick={() => {/* TODO: открыть карточку клиента */}}
+                      onClick={() => {/* TODO: открыть карточку клиента */ }}
                     >
                       <Visibility />
                     </IconButton>
                     <IconButton
                       size="small"
                       title="Редактировать"
-                      onClick={() => {/* TODO: открыть форму редактирования */}}
+                      onClick={() => {/* TODO: открыть форму редактирования */ }}
                     >
                       <Edit />
                     </IconButton>
@@ -195,7 +195,7 @@ export default function ClientsPage() {
                         size="small"
                         title="Заблокировать"
                         color="error"
-                        onClick={() => {/* TODO: заблокировать */}}
+                        onClick={() => {/* TODO: заблокировать */ }}
                       >
                         <Block />
                       </IconButton>
@@ -205,7 +205,7 @@ export default function ClientsPage() {
                         size="small"
                         title="Разблокировать"
                         color="success"
-                        onClick={() => {/* TODO: разблокировать */}}
+                        onClick={() => {/* TODO: разблокировать */ }}
                       >
                         <PlayArrow />
                       </IconButton>
@@ -215,7 +215,7 @@ export default function ClientsPage() {
                         size="small"
                         title="Приостановить"
                         color="warning"
-                        onClick={() => {/* TODO: приостановить */}}
+                        onClick={() => {/* TODO: приостановить */ }}
                       >
                         <Pause />
                       </IconButton>
