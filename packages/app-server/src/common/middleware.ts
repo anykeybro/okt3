@@ -134,18 +134,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     // Регистрируем запрос в метриках
     metricsCollector.recordRequest(duration);
     
-    // Логируем запрос
+    // Логируем запрос (базовое логирование для совместимости)
     logger.logRequest(req, res, duration);
-    
-    // Логируем медленные запросы отдельно
-    if (duration > 1000) {
-      logger.warn('Slow request detected', {
-        duration,
-        method: req.method,
-        url: req.originalUrl,
-        statusCode: res.statusCode,
-      });
-    }
   });
   
   next();
@@ -256,3 +246,6 @@ export const validateRequestSize = (maxSize: number = 10 * 1024 * 1024) => {
     next();
   };
 };
+
+// Экспортируем HTTP логгер
+export { httpLogger } from './middleware/http-logger.middleware';

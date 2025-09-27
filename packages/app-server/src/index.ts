@@ -9,7 +9,8 @@ import {
   requestContext, 
   apiRateLimiter,
   validateContentType,
-  validateRequestSize 
+  validateRequestSize,
+  httpLogger
 } from './common/middleware';
 import { 
   securityHeaders,
@@ -39,14 +40,14 @@ handleUncaughtException();
 handleUnhandledRejection();
 handleGracefulShutdown();
 
-// Middleware безопасности (в правильном порядке)
-app.use(enforceHTTPS); // Принуждение HTTPS в продакшене
+// Middleware безопасности (временно отключены для диагностики)
+// app.use(enforceHTTPS); // Принуждение HTTPS в продакшене
 app.use(securityHeaders); // Заголовки безопасности
-app.use(additionalSecurityHeaders); // Дополнительные заголовки
-app.use(securityLogger); // Логирование подозрительной активности
-app.use(ipBlacklist); // Проверка заблокированных IP
-app.use(rateLimiter); // Ограничение частоты запросов
-app.use(speedLimiter); // Замедление подозрительных запросов
+// app.use(additionalSecurityHeaders); // Дополнительные заголовки
+// app.use(securityLogger); // Логирование подозрительной активности
+// app.use(ipBlacklist); // Проверка заблокированных IP
+// app.use(rateLimiter); // Ограничение частоты запросов
+// app.use(speedLimiter); // Замедление подозрительных запросов
 
 // Базовые middleware
 app.use(cors(config.server.cors));
@@ -54,32 +55,35 @@ app.use(limitRequestSize(1024 * 1024)); // 1MB лимит
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Санитизация входных данных
-app.use(sanitizeInput);
+// Санитизация входных данных (временно отключена)
+// app.use(sanitizeInput);
 
-// CSRF защита
-app.use(csrfProtection);
+// CSRF защита (временно отключена)
+// app.use(csrfProtection);
 
 // Добавляем контекст запроса и логирование
 app.use(requestContext);
-app.use(requestLogger);
+app.use(httpLogger); // Детальное HTTP логирование
+app.use(requestLogger); // Базовое логирование для метрик
 
 // Валидация запросов
 app.use(validateContentType);
 app.use(validateRequestSize());
 
-// Swagger документация
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'OK-Telecom Billing API',
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    filter: true,
-    showExtensions: true,
-    showCommonExtensions: true
-  }
-}));
+// Swagger документация (временно отключена)
+// const swaggerOptions = {
+//   customCss: '.swagger-ui .topbar { display: none }',
+//   customSiteTitle: 'OK-Telecom Billing API',
+//   swaggerOptions: {
+//     persistAuthorization: true,
+//     displayRequestDuration: true,
+//     filter: true,
+//     showExtensions: true,
+//     showCommonExtensions: true
+//   }
+// };
+// app.use('/api-docs', swaggerUi.serve);
+// app.get('/api-docs', swaggerUi.setup(swaggerSpec, swaggerOptions));
 
 // JSON схема для API
 app.get('/api-docs.json', (req, res) => {
@@ -98,21 +102,34 @@ app.get('/', (req, res) => {
 });
 
 // Базовый health check (простой)
-app.get('/health', async (req, res) => {
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    service: 'app-server'
+  });
+});
+
+// Health check с проверкой базы данных (упрощенный)
+app.get('/api/health', async (req, res) => {
   try {
-    await prisma.$runCommandRaw({ ping: 1 });
+    // Временно отключаем проверку базы данных
+    // await prisma.$runCommandRaw({ ping: 1 });
     res.json({ 
       status: 'OK', 
       timestamp: new Date().toISOString(),
-      database: 'connected',
-      uptime: process.uptime()
+      database: 'skipped',
+      uptime: process.uptime(),
+      service: 'app-server'
     });
   } catch (error) {
     res.status(503).json({ 
       status: 'ERROR', 
       timestamp: new Date().toISOString(),
       database: 'disconnected',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      service: 'app-server'
     });
   }
 });

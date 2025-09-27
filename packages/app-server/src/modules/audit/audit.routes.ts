@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { auditController, auditValidators } from './audit.controller';
-import { authMiddleware } from '../auth/auth.middleware';
-import { requirePermission } from '../auth/permission.middleware';
+import { authMiddleware, requirePermission } from '../auth/middleware';
 
 const router = Router();
 

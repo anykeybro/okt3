@@ -58,6 +58,13 @@ const transports = [
     level: 'error',
     format: fileFormat,
   }),
+  
+  // Файл для HTTP запросов
+  new winston.transports.File({
+    filename: path.join(process.cwd(), 'logs', 'http.log'),
+    level: 'http',
+    format: fileFormat,
+  }),
 ];
 
 // Создаем основной логгер

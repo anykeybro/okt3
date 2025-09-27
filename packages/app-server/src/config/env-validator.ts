@@ -16,7 +16,8 @@ const envRules: EnvValidationRule[] = [
   {
     name: 'DATABASE_URL',
     required: true,
-    type: 'url',
+    type: 'string',
+    validator: (value) => value.startsWith('mongodb://') || value.startsWith('mongodb+srv://'),
     description: 'URL подключения к MongoDB',
   },
   {
@@ -526,6 +527,4 @@ export function printValidationResults(result: ValidationResult): void {
   }
 }
 
-// Автоматическая валидация при импорте модуля
-const validationResult = validateEnvironment();
-printValidationResults(validationResult);
+// Валидация будет запущена вручную из config.ts

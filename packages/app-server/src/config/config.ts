@@ -12,8 +12,11 @@ const envPath = path.join(rootPath, envFile);
 
 dotenv.config({ path: envPath });
 
-// Импортируем валидатор после загрузки переменных окружения
-import './env-validator';
+// Импортируем и запускаем валидатор после загрузки переменных окружения
+import { validateEnvironment, printValidationResults } from './env-validator';
+
+const validationResult = validateEnvironment();
+printValidationResults(validationResult);
 
 export const config = {
   // Настройки сервера
@@ -161,6 +164,16 @@ export const config = {
     enableFile: process.env.LOG_ENABLE_FILE !== 'false',
     logDirectory: process.env.LOG_DIRECTORY || 'logs',
     auditRetentionDays: parseInt(process.env.AUDIT_RETENTION_DAYS || '90', 10),
+    // Настройки детального логирования HTTP запросов
+    http: {
+      logRequests: process.env.LOG_HTTP_REQUESTS !== 'false',
+      logRequestBody: process.env.LOG_HTTP_REQUEST_BODY === 'true',
+      logResponseBody: process.env.LOG_HTTP_RESPONSE_BODY === 'true',
+      logHeaders: process.env.LOG_HTTP_HEADERS === 'true',
+      maxBodySize: parseInt(process.env.LOG_HTTP_MAX_BODY_SIZE || '1000', 10), // символов
+      excludePaths: (process.env.LOG_HTTP_EXCLUDE_PATHS || '/health,/api-docs').split(','),
+      sensitiveFields: (process.env.LOG_HTTP_SENSITIVE_FIELDS || 'password,token,secret,authorization').split(','),
+    },
   },
 
   // Dashboard

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import slowDown from 'express-slow-down';
 import { config } from '../../config/config';
 import { cacheService } from '../cache/cache.service';
@@ -65,6 +65,9 @@ export const rateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   
+  // Используем встроенный keyGenerator для IPv6
+  keyGenerator: (req: Request) => ipKeyGenerator(req.ip || req.connection.remoteAddress || 'unknown'),
+  
   // Кастомная функция для подсчета запросов с использованием Redis
   store: {
     incr: async (key: string) => {
@@ -87,11 +90,6 @@ export const rateLimiter = rateLimit({
   
   // Пропускать неудачные запросы
   skipFailedRequests: false,
-  
-  // Кастомная функция для определения ключа
-  keyGenerator: (req: Request) => {
-    return req.ip || 'unknown';
-  },
 });
 
 /**
@@ -107,6 +105,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Не считать успешные входы
+  keyGenerator: (req: Request) => ipKeyGenerator(req.ip || req.connection.remoteAddress || 'unknown'),
 });
 
 /**
@@ -115,8 +114,12 @@ export const authRateLimiter = rateLimit({
 export const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 минут
   delayAfter: 50, // Начинать замедление после 50 запросов
-  delayMs: 500, // Увеличивать задержку на 500мс за каждый запрос
+  delayMs: () => 500, // Фиксированная задержка 500мс
   maxDelayMs: 20000, // Максимальная задержка 20 секунд
+  keyGenerator: (req: Request) => ipKeyGenerator(req.ip || req.connection.remoteAddress || 'unknown'), // Используем встроенный keyGenerator для IPv6
+  validate: {
+    delayMs: false, // Отключаем предупреждение
+  },
 });
 
 /**
