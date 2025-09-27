@@ -19,6 +19,8 @@ export interface MonitoringData {
 }
 
 export class MonitoringService {
+  private monitoringStarted = false;
+  
   constructor(private prisma: PrismaClient) {}
 
   // Получение всех метрик для мониторинга
@@ -334,14 +336,25 @@ export class MonitoringService {
 
   // Запуск периодического мониторинга
   startPeriodicMonitoring(): void {
+    // Предотвращаем множественный запуск
+    if (this.monitoringStarted) {
+      return;
+    }
+    
+    this.monitoringStarted = true;
     const interval = config.monitoring.healthCheckInterval;
     
     setInterval(async () => {
       try {
+        // Проверяем подключение к базе данных перед получением метрик
+        await this.prisma.$runCommandRaw({ ping: 1 });
         const metrics = await this.getAllMetrics();
         await this.sendToZabbix(metrics);
       } catch (error) {
-        mainLogger.error('Ошибка периодического мониторинга', error as Error);
+        // Логируем ошибку, но не спамим в консоль
+        if (error instanceof Error && !error.message.includes('Server selection timeout')) {
+          mainLogger.error('Ошибка периодического мониторинга', error as Error);
+        }
       }
     }, interval);
 
