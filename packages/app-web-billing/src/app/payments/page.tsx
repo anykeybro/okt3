@@ -256,7 +256,7 @@ export default function PaymentsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data?.items.map((payment: any) => (
+              {data?.items?.map((payment: any) => (
                 <TableRow key={payment.id} hover>
                   <TableCell>
                     <DateDisplay date={payment.createdAt} format="datetime" />

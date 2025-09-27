@@ -300,7 +300,7 @@ export default function NotificationsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {notificationsData?.items.map((notification: any) => (
+                {notificationsData?.items?.map((notification: any) => (
                   <TableRow key={notification.id} hover>
                     <TableCell>
                       <DateDisplay date={notification.createdAt} format="datetime" />
@@ -384,7 +384,7 @@ export default function NotificationsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {templatesData?.items.map((template: any) => (
+                {templatesData?.items?.map((template: any) => (
                   <TableRow key={template.id} hover>
                     <TableCell>
                       <Chip

@@ -184,7 +184,7 @@ export default function TariffsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {tariffsData?.items.map((tariff) => (
+                {tariffsData?.items?.map((tariff) => (
                   <TableRow key={tariff.id} hover>
                     <TableCell>
                       <Typography variant="body2" fontWeight="medium">
@@ -268,7 +268,7 @@ export default function TariffsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {servicesData?.items.map((service) => (
+                {servicesData?.items?.map((service) => (
                   <TableRow key={service.id} hover>
                     <TableCell>
                       <Typography variant="body2" fontWeight="medium">
@@ -332,7 +332,7 @@ export default function TariffsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {groupsData?.items.map((group) => (
+                {groupsData?.items?.map((group) => (
                   <TableRow key={group.id} hover>
                     <TableCell>
                       <Typography variant="body2" fontWeight="medium">

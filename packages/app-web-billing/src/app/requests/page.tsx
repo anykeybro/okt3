@@ -198,7 +198,7 @@ export default function RequestsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data?.items.map((request: any, index: number) => (
+              {data?.items?.map((request: any, index: number) => (
                 <TableRow key={request.id} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight="medium">

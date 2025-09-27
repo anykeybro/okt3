@@ -148,7 +148,7 @@ export default function DevicesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data?.items.map((device: any) => (
+              {data?.items?.map((device: any) => (
                 <TableRow key={device.id} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight="medium">
