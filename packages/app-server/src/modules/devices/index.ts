@@ -4,6 +4,7 @@ export { DeviceService } from './device.service';
 export { MikroTikService } from './mikrotik.service';
 export { DeviceController } from './device.controller';
 export { MikroTikKafkaConsumer } from './kafka.consumer';
+export { CommandMonitorService } from './command-monitor.service';
 export { createDeviceRoutes } from './device.routes';
 
 export * from './device.types';

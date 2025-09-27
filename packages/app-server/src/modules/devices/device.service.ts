@@ -298,18 +298,49 @@ export class DeviceService {
   }
 
   // Отправка команды через Kafka
-  async sendMikroTikCommand(command: MikroTikCommand): Promise<void> {
+  async sendMikroTikCommand(command: MikroTikCommand): Promise<string> {
     try {
+      const commandId = `${command.deviceId}-${command.timestamp}`;
+      
       await this.kafkaService.sendMessage(config.kafka.topics.mikrotikCommands, {
         ...command,
         timestamp: Date.now()
       });
       
       console.log(`📤 Команда MikroTik отправлена: ${command.type} для устройства ${command.deviceId}`);
+      return commandId;
     } catch (error) {
       console.error('❌ Ошибка отправки команды MikroTik:', error);
       throw error;
     }
+  }
+
+  // Получение статуса команды (заглушка - нужна интеграция с consumer)
+  getCommandStatus(commandId: string): any {
+    // TODO: Интегрировать с CommandMonitorService
+    console.log(`🔍 Запрос статуса команды: ${commandId}`);
+    return null;
+  }
+
+  // Получение активных команд (заглушка - нужна интеграция с consumer)
+  getActiveCommands(): any[] {
+    // TODO: Интегрировать с CommandMonitorService
+    console.log('📋 Запрос списка активных команд');
+    return [];
+  }
+
+  // Получение статистики команд (заглушка - нужна интеграция с consumer)
+  getCommandStats(): any {
+    // TODO: Интегрировать с CommandMonitorService
+    console.log('📊 Запрос статистики команд');
+    return {
+      total: 0,
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      failed: 0,
+      timeout: 0
+    };
   }
 
   // Получение пароля устройства (для внутреннего использования)

@@ -237,6 +237,100 @@ export class DeviceController {
     }
   };
 
+  // Отправка команды на устройство
+  sendCommand = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { deviceId, accountId, type, macAddress, ipAddress, poolName } = req.body;
+
+      if (!deviceId || !accountId || !type || !macAddress) {
+        res.status(400).json({
+          success: false,
+          error: 'deviceId, accountId, type и macAddress обязательны'
+        } as ApiResponse);
+        return;
+      }
+
+      const commandId = await this.deviceService.sendMikroTikCommand({
+        type,
+        deviceId,
+        accountId,
+        macAddress,
+        ipAddress,
+        poolName,
+        timestamp: Date.now()
+      });
+
+      res.json({
+        success: true,
+        data: { commandId },
+        message: 'Команда отправлена на выполнение'
+      } as ApiResponse);
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  };
+
+  // Получение статуса команды
+  getCommandStatus = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { commandId } = req.params;
+
+      if (!commandId) {
+        res.status(400).json({
+          success: false,
+          error: 'ID команды обязателен'
+        } as ApiResponse);
+        return;
+      }
+
+      const status = this.deviceService.getCommandStatus(commandId);
+
+      if (!status) {
+        res.status(404).json({
+          success: false,
+          error: 'Команда не найдена или уже завершена'
+        } as ApiResponse);
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: status
+      } as ApiResponse);
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  };
+
+  // Получение списка активных команд
+  getActiveCommands = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const commands = this.deviceService.getActiveCommands();
+
+      res.json({
+        success: true,
+        data: commands,
+        message: `Найдено ${commands.length} активных команд`
+      } as ApiResponse);
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  };
+
+  // Получение статистики команд
+  getCommandStats = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const stats = this.deviceService.getCommandStats();
+
+      res.json({
+        success: true,
+        data: stats
+      } as ApiResponse);
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  };
+
   // Обработка ошибок
   private handleError(res: Response, error: unknown): void {
     console.error('❌ Ошибка в DeviceController:', error);

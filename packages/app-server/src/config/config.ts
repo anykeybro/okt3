@@ -1,4 +1,6 @@
-// Конфигурация приложения
+/**
+ * Конфигурация приложения app-server
+ */
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -9,6 +11,9 @@ const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.en
 const envPath = path.join(rootPath, envFile);
 
 dotenv.config({ path: envPath });
+
+// Импортируем валидатор после загрузки переменных окружения
+import './env-validator';
 
 export const config = {
   // Настройки сервера
@@ -91,11 +96,37 @@ export const config = {
     },
   },
 
+  // Redis для кеширования
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || '0', 10),
+    keyPrefix: process.env.REDIS_KEY_PREFIX || 'billing:',
+    connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '10000', 10),
+    lazyConnect: true,
+  },
+
+  // Настройки кеширования
+  cache: {
+    defaultTtl: parseInt(process.env.CACHE_DEFAULT_TTL || '300', 10), // 5 минут
+    dashboardTtl: parseInt(process.env.CACHE_DASHBOARD_TTL || '60', 10), // 1 минута
+    tariffsTtl: parseInt(process.env.CACHE_TARIFFS_TTL || '3600', 10), // 1 час
+    clientsTtl: parseInt(process.env.CACHE_CLIENTS_TTL || '1800', 10), // 30 минут
+    devicesTtl: parseInt(process.env.CACHE_DEVICES_TTL || '300', 10), // 5 минут
+    templatesTtl: parseInt(process.env.CACHE_TEMPLATES_TTL || '7200', 10), // 2 часа
+  },
+
   // Безопасность
   security: {
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
     rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW || '900000', 10), // 15 минут
     rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+    sessionTimeout: parseInt(process.env.SESSION_TIMEOUT || '86400000', 10), // 24 часа
+    maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5', 10),
+    lockoutDuration: parseInt(process.env.LOCKOUT_DURATION || '900000', 10), // 15 минут
+    passwordMinLength: parseInt(process.env.PASSWORD_MIN_LENGTH || '8', 10),
+    requirePasswordComplexity: process.env.REQUIRE_PASSWORD_COMPLEXITY !== 'false',
   },
 
   // MikroTik
@@ -112,6 +143,24 @@ export const config = {
     zabbixUrl: process.env.ZABBIX_URL || 'http://localhost/zabbix',
     grafanaUrl: process.env.GRAFANA_URL || 'http://localhost/grafana',
     healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000', 10), // 30 секунд
+    metricsRetentionDays: parseInt(process.env.METRICS_RETENTION_DAYS || '30', 10),
+    alertThresholds: {
+      memoryUsage: parseFloat(process.env.ALERT_MEMORY_THRESHOLD || '90'), // %
+      cpuUsage: parseFloat(process.env.ALERT_CPU_THRESHOLD || '80'), // %
+      errorRate: parseFloat(process.env.ALERT_ERROR_RATE || '5'), // %
+      responseTime: parseInt(process.env.ALERT_RESPONSE_TIME || '1000', 10), // ms
+    },
+  },
+
+  // Логирование
+  logging: {
+    level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'development' ? 'debug' : 'info'),
+    maxFiles: parseInt(process.env.LOG_MAX_FILES || '10', 10),
+    maxSize: process.env.LOG_MAX_SIZE || '10m',
+    enableConsole: process.env.LOG_ENABLE_CONSOLE !== 'false',
+    enableFile: process.env.LOG_ENABLE_FILE !== 'false',
+    logDirectory: process.env.LOG_DIRECTORY || 'logs',
+    auditRetentionDays: parseInt(process.env.AUDIT_RETENTION_DAYS || '90', 10),
   },
 
   // Dashboard
@@ -126,24 +175,6 @@ export const config = {
   },
 };
 
-// Валидация обязательных переменных
-const requiredEnvVars = [
-  'DATABASE_URL',
-  'JWT_SECRET',
-  'TELEGRAM_BOT_TOKEN',
-  'SMS_GATEWAY_IP',
-  'SMS_GATEWAY_USERNAME',
-  'SMS_GATEWAY_PASSWORD',
-  'ROBOKASSA_MERCHANT_ID',
-  'ROBOKASSA_PASSWORD1',
-  'ROBOKASSA_PASSWORD2',
-  'YANDEX_MAPS_API_KEY',
-];
-
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    throw new Error(`Отсутствует обязательная переменная окружения: ${envVar}`);
-  }
-}
+// Валидация переменных окружения выполняется в env-validator.ts
 
 export default config;

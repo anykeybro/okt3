@@ -14,3 +14,6 @@ export * from './devices';
 
 // Модуль панели управления и аналитики
 export * from './dashboard';
+
+// Модуль Telegram бота
+export * from './telegram';

@@ -22,6 +22,7 @@ model SystemUser {
   // Связи
   processedPayments Payment[] @relation("ProcessedBy")
   assignedRequests  Request[] @relation("AssignedTo")
+  auditLogs         AuditLog[]
 
   @@map("system_users")
 }
@@ -229,6 +230,24 @@ model NotificationTemplate {
 
   @@unique([type, channel])
   @@map("notification_templates")
+}
+
+// Журнал аудита
+model AuditLog {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String    @db.ObjectId
+  user       SystemUser @relation(fields: [userId], references: [id])
+  action     String    // Действие (create, update, delete, login, etc.)
+  resource   String    // Ресурс (client, account, tariff, etc.)
+  resourceId String?   // ID ресурса (если применимо)
+  oldValues  String?   // JSON строка со старыми значениями
+  newValues  String?   // JSON строка с новыми значениями
+  ipAddress  String?   // IP адрес пользователя
+  userAgent  String?   // User Agent браузера
+  metadata   String?   // Дополнительные метаданные в JSON
+  createdAt  DateTime  @default(now())
+
+  @@map("audit_logs")
 }
 
 // Перечисления

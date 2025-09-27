@@ -1,5 +1,4 @@
 // Настройка тестовой среды
-import { jest } from '@jest/globals';
 
 // Мокаем console.log для тестов
 global.console = {

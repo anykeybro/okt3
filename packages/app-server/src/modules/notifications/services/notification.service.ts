@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { SMSService } from './sms.service';
 import { TelegramService } from './telegram.service';
 import { TemplateService } from './template.service';
+import { TelegramBotService } from '../../telegram/services/telegram-bot.service';
 import { 
   NotificationData, 
   NotificationResult, 
@@ -15,11 +16,13 @@ import { config } from '../../../config/config';
 export class NotificationService {
   private smsService: SMSService;
   private telegramService: TelegramService;
+  private telegramBotService: TelegramBotService;
   private templateService: TemplateService;
 
   constructor(private prisma: PrismaClient) {
     this.smsService = new SMSService();
     this.telegramService = new TelegramService();
+    this.telegramBotService = new TelegramBotService();
     this.templateService = new TemplateService(prisma);
   }
 
@@ -47,8 +50,32 @@ export class NotificationService {
       // Подготавливаем переменные для шаблона
       const templateVariables = this.prepareTemplateVariables(client, data.variables);
 
-      // Пытаемся отправить через Telegram (приоритет 1)
+      // Пытаемся отправить через Telegram бота (приоритет 1)
       if (client.telegramId) {
+        // Сначала пробуем отправить через бота (более интерактивно)
+        const botResult = await this.sendTelegramBotNotification(
+          data.clientId,
+          templateVariables
+        );
+
+        if (botResult) {
+          // Сохраняем в журнал
+          await this.saveNotificationLog(
+            data.clientId,
+            data.type,
+            NotificationChannel.TELEGRAM,
+            'bot_notification',
+            NotificationStatus.SENT
+          );
+
+          return {
+            success: true,
+            channel: NotificationChannel.TELEGRAM,
+            messageId: 'bot_notification'
+          };
+        }
+
+        // Если бот недоступен, используем обычный Telegram API
         const telegramResult = await this.sendTelegramNotification(
           client.telegramId,
           data.type,
@@ -111,6 +138,43 @@ export class NotificationService {
         error: error instanceof Error ? error.message : 'Неизвестная ошибка',
       };
     }
+  }
+
+  /**
+   * Отправка уведомления через Telegram бота
+   */
+  private async sendTelegramBotNotification(
+    clientId: string,
+    variables: Record<string, any>
+  ): Promise<boolean> {
+    try {
+      // Формируем сообщение для бота
+      const message = this.formatBotNotificationMessage(variables);
+      
+      // Отправляем через бота
+      return await this.telegramBotService.sendNotification(clientId, message);
+    } catch (error) {
+      console.error('❌ Ошибка отправки уведомления через бота:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Форматирование сообщения для бота
+   */
+  private formatBotNotificationMessage(variables: Record<string, any>): string {
+    const { firstName, lastName, balance, tariffName, accountNumber } = variables;
+    
+    return `
+🔔 <b>Уведомление OK-Telecom</b>
+
+👤 <b>Абонент:</b> ${firstName} ${lastName}
+🏷️ <b>Лицевой счет:</b> ${accountNumber}
+💰 <b>Баланс:</b> ${balance} ₽
+📊 <b>Тариф:</b> ${tariffName}
+
+${variables.message || 'Проверьте состояние вашего счета в личном кабинете.'}
+    `.trim();
   }
 
   /**

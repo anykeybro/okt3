@@ -32,5 +32,17 @@ export function createDeviceRoutes(deviceController: DeviceController): Router {
   // GET /api/devices/:id/health - Проверка состояния устройства
   router.get('/:id/health', deviceController.checkDeviceHealth);
 
+  // POST /api/devices/commands - Отправка команды на устройство
+  router.post('/commands', deviceController.sendCommand);
+
+  // GET /api/devices/commands/active - Получение активных команд
+  router.get('/commands/active', deviceController.getActiveCommands);
+
+  // GET /api/devices/commands/stats - Статистика команд
+  router.get('/commands/stats', deviceController.getCommandStats);
+
+  // GET /api/devices/commands/:commandId - Статус команды
+  router.get('/commands/:commandId', deviceController.getCommandStatus);
+
   return router;
 }

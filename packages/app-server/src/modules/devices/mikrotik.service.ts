@@ -84,18 +84,21 @@ export class MikroTikService {
     }
   }
 
-  // Блокировка клиента
+  // Блокировка клиента (несколько методов)
   async blockClient(connectionConfig: MikroTikConnectionConfig, macAddress: string): Promise<MikroTikApiResponse> {
     try {
-      // Добавляем MAC в список заблокированных
-      const command = `/interface/ethernet/switch/rule/add`;
-      const params = {
-        'src-mac-address': macAddress,
-        'new-dst-port': 'drop',
-        'comment': `Заблокирован биллингом ${new Date().toISOString()}`
-      };
+      console.log(`🚫 Блокировка клиента ${macAddress} на устройстве ${connectionConfig.host}`);
+      
+      // Метод 1: Блокировка через Address List
+      const addressListResult = await this.addToAddressList(connectionConfig, macAddress, 'blocked-clients');
+      
+      // Метод 2: Блокировка через Firewall Filter (если Address List не сработал)
+      if (!addressListResult.success) {
+        console.log('⚠️ Address List блокировка не удалась, пробуем Firewall Filter');
+        return await this.addFirewallBlockRule(connectionConfig, macAddress);
+      }
 
-      return await this.makeApiRequest(connectionConfig, command, params);
+      return addressListResult;
     } catch (error) {
       throw new ExternalServiceError('MikroTik', `Ошибка блокировки клиента: ${error}`);
     }
@@ -104,23 +107,134 @@ export class MikroTikService {
   // Разблокировка клиента
   async unblockClient(connectionConfig: MikroTikConnectionConfig, macAddress: string): Promise<MikroTikApiResponse> {
     try {
-      // Находим правило блокировки по MAC адресу
-      const findResponse = await this.makeApiRequest(connectionConfig, '/interface/ethernet/switch/rule/print', {
-        'where': `src-mac-address=${macAddress}`
+      console.log(`✅ Разблокировка клиента ${macAddress} на устройстве ${connectionConfig.host}`);
+      
+      // Метод 1: Удаление из Address List
+      const addressListResult = await this.removeFromAddressList(connectionConfig, macAddress, 'blocked-clients');
+      
+      // Метод 2: Удаление Firewall правила
+      const firewallResult = await this.removeFirewallBlockRule(connectionConfig, macAddress);
+      
+      // Считаем успешным, если хотя бы один метод сработал
+      return {
+        success: addressListResult.success || firewallResult.success,
+        data: {
+          addressList: addressListResult,
+          firewall: firewallResult
+        }
+      };
+    } catch (error) {
+      throw new ExternalServiceError('MikroTik', `Ошибка разблокировки клиента: ${error}`);
+    }
+  }
+
+  // Добавление MAC адреса в Address List
+  private async addToAddressList(
+    connectionConfig: MikroTikConnectionConfig, 
+    macAddress: string, 
+    listName: string
+  ): Promise<MikroTikApiResponse> {
+    try {
+      // Сначала получаем IP адрес по MAC из DHCP lease
+      const dhcpResponse = await this.makeApiRequest(connectionConfig, '/ip/dhcp-server/lease/print', {
+        'where': `mac-address=${macAddress}`
+      });
+
+      if (!dhcpResponse.success || !dhcpResponse.data || dhcpResponse.data.length === 0) {
+        return { success: false, error: 'IP адрес для MAC не найден в DHCP lease' };
+      }
+
+      const ipAddress = dhcpResponse.data[0].address;
+      
+      // Добавляем IP в Address List
+      return await this.makeApiRequest(connectionConfig, '/ip/firewall/address-list/add', {
+        'list': listName,
+        'address': ipAddress,
+        'comment': `Заблокирован биллингом: MAC ${macAddress} - ${new Date().toISOString()}`
+      });
+    } catch (error) {
+      return { success: false, error: `Ошибка добавления в Address List: ${error}` };
+    }
+  }
+
+  // Удаление MAC адреса из Address List
+  private async removeFromAddressList(
+    connectionConfig: MikroTikConnectionConfig, 
+    macAddress: string, 
+    listName: string
+  ): Promise<MikroTikApiResponse> {
+    try {
+      // Получаем IP адрес по MAC
+      const dhcpResponse = await this.makeApiRequest(connectionConfig, '/ip/dhcp-server/lease/print', {
+        'where': `mac-address=${macAddress}`
+      });
+
+      if (!dhcpResponse.success || !dhcpResponse.data || dhcpResponse.data.length === 0) {
+        return { success: true }; // Если нет DHCP lease, то и блокировки нет
+      }
+
+      const ipAddress = dhcpResponse.data[0].address;
+      
+      // Находим запись в Address List
+      const findResponse = await this.makeApiRequest(connectionConfig, '/ip/firewall/address-list/print', {
+        'where': `list=${listName} && address=${ipAddress}`
       });
 
       if (!findResponse.success || !findResponse.data || findResponse.data.length === 0) {
-        return { success: true }; // Клиент уже разблокирован
+        return { success: true }; // Уже удален
+      }
+
+      const entryId = findResponse.data[0]['.id'];
+      
+      // Удаляем запись
+      return await this.makeApiRequest(connectionConfig, '/ip/firewall/address-list/remove', {
+        'numbers': entryId
+      });
+    } catch (error) {
+      return { success: false, error: `Ошибка удаления из Address List: ${error}` };
+    }
+  }
+
+  // Добавление правила блокировки через Firewall Filter
+  private async addFirewallBlockRule(
+    connectionConfig: MikroTikConnectionConfig, 
+    macAddress: string
+  ): Promise<MikroTikApiResponse> {
+    try {
+      return await this.makeApiRequest(connectionConfig, '/ip/firewall/filter/add', {
+        'chain': 'forward',
+        'src-mac-address': macAddress,
+        'action': 'drop',
+        'comment': `Блокировка биллинга: ${macAddress} - ${new Date().toISOString()}`
+      });
+    } catch (error) {
+      return { success: false, error: `Ошибка добавления Firewall правила: ${error}` };
+    }
+  }
+
+  // Удаление правила блокировки через Firewall Filter
+  private async removeFirewallBlockRule(
+    connectionConfig: MikroTikConnectionConfig, 
+    macAddress: string
+  ): Promise<MikroTikApiResponse> {
+    try {
+      // Находим правило по MAC адресу
+      const findResponse = await this.makeApiRequest(connectionConfig, '/ip/firewall/filter/print', {
+        'where': `src-mac-address=${macAddress} && action=drop`
+      });
+
+      if (!findResponse.success || !findResponse.data || findResponse.data.length === 0) {
+        return { success: true }; // Правило уже удалено
       }
 
       const ruleId = findResponse.data[0]['.id'];
       
-      // Удаляем правило блокировки
-      return await this.makeApiRequest(connectionConfig, '/interface/ethernet/switch/rule/remove', {
+      // Удаляем правило
+      return await this.makeApiRequest(connectionConfig, '/ip/firewall/filter/remove', {
         'numbers': ruleId
       });
     } catch (error) {
-      throw new ExternalServiceError('MikroTik', `Ошибка разблокировки клиента: ${error}`);
+      return { success: false, error: `Ошибка удаления Firewall правила: ${error}` };
     }
   }
 

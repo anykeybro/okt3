@@ -2,6 +2,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { MikroTikService } from './mikrotik.service';
+import { CommandMonitorService } from './command-monitor.service';
 import { MikroTikCommand, MikroTikCommandResult } from './device.types';
 import { config } from '../../config/config';
 import KafkaService from '../../kafka';
@@ -10,11 +11,13 @@ export class MikroTikKafkaConsumer {
   private prisma: PrismaClient;
   private mikrotikService: MikroTikService;
   private kafkaService: KafkaService;
+  private commandMonitor: CommandMonitorService;
 
   constructor(prisma: PrismaClient, kafkaService: KafkaService) {
     this.prisma = prisma;
     this.mikrotikService = new MikroTikService();
     this.kafkaService = kafkaService;
+    this.commandMonitor = new CommandMonitorService(prisma, kafkaService);
   }
 
   // Запуск consumer'а
@@ -27,6 +30,9 @@ export class MikroTikKafkaConsumer {
         this.handleMikroTikCommand.bind(this)
       );
 
+      // Запускаем мониторинг команд
+      await this.commandMonitor.start();
+
       console.log('🎯 MikroTik Kafka Consumer запущен');
     } catch (error) {
       console.error('❌ Ошибка запуска MikroTik Kafka Consumer:', error);
@@ -36,7 +42,17 @@ export class MikroTikKafkaConsumer {
 
   // Обработка команд MikroTik
   private async handleMikroTikCommand(message: MikroTikCommand): Promise<void> {
-    console.log(`🔧 Обработка команды MikroTik: ${message.type} для устройства ${message.deviceId}`);
+    const commandId = `${message.deviceId}-${message.timestamp}`;
+    console.log(`🔧 Обработка команды MikroTik: ${message.type} для устройства ${message.deviceId} (ID: ${commandId})`);
+
+    // Регистрируем команду в мониторинге
+    this.commandMonitor.registerCommand(
+      commandId,
+      message.deviceId,
+      message.accountId,
+      message.type,
+      config.mikrotik.defaultTimeout
+    );
 
     try {
       // Получаем информацию об устройстве
@@ -126,7 +142,7 @@ export class MikroTikKafkaConsumer {
 
       // Отправляем результат выполнения
       await this.sendCommandResult({
-        commandId: `${message.deviceId}-${message.timestamp}`,
+        commandId,
         deviceId: message.deviceId,
         success,
         result,
@@ -140,7 +156,7 @@ export class MikroTikKafkaConsumer {
 
       // Отправляем информацию об ошибке
       await this.sendCommandResult({
-        commandId: `${message.deviceId}-${message.timestamp}`,
+        commandId,
         deviceId: message.deviceId,
         success: false,
         error: error instanceof Error ? error.message : 'Неизвестная ошибка',
@@ -159,9 +175,15 @@ export class MikroTikKafkaConsumer {
     }
   }
 
+  // Получение мониторинга команд
+  getCommandMonitor(): CommandMonitorService {
+    return this.commandMonitor;
+  }
+
   // Остановка consumer'а
   async stop(): Promise<void> {
     try {
+      await this.commandMonitor.stop();
       await this.kafkaService.disconnect();
       console.log('🛑 MikroTik Kafka Consumer остановлен');
     } catch (error) {

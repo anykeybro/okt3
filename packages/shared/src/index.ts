@@ -29,3 +29,22 @@ export const formatDate = (date: Date): string => {
 export const delay = (ms: number): Promise<void> => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
+
+// Экспорт конфигурации
+export { default as sharedConfig } from './config/config';
+export type {
+  SharedConfig,
+  AccountStatus,
+  RequestStatus,
+  PaymentStatus,
+  DeviceStatus,
+  NotificationStatus,
+  UserStatus,
+  ServiceType,
+  BillingType,
+  PaymentSource,
+  NotificationChannel,
+  NotificationType,
+  UserRole,
+  Permission,
+} from './config/config';
