@@ -19,32 +19,32 @@ export const paymentsApi = {
     dateFrom?: string;
     dateTo?: string;
   }) {
-    return apiClient.get<PaginatedResponse<Payment>>('/api/payments', params);
+    return apiClient.get<PaginatedResponse<Payment>>('/payments', params);
   },
 
   // Получение платежа по ID
   async getPayment(id: string) {
-    return apiClient.get<Payment>(`/api/payments/${id}`);
+    return apiClient.get<Payment>(`/payments/${id}`);
   },
 
   // Создание ручного платежа
   async createPayment(data: CreatePaymentRequest) {
-    return apiClient.post<Payment>('/api/payments', data);
+    return apiClient.post<Payment>('/payments', data);
   },
 
   // Получение платежей по лицевому счету
   async getAccountPayments(accountId: string, params?: PaginationParams) {
-    return apiClient.get<PaginatedResponse<Payment>>(`/api/accounts/${accountId}/payments`, params);
+    return apiClient.get<PaginatedResponse<Payment>>(`/accounts/${accountId}/payments`, params);
   },
 
   // Отмена платежа
   async cancelPayment(id: string, reason?: string) {
-    return apiClient.post(`/api/payments/${id}/cancel`, { reason });
+    return apiClient.post(`/payments/${id}/cancel`, { reason });
   },
 
   // Подтверждение платежа
   async confirmPayment(id: string) {
-    return apiClient.post(`/api/payments/${id}/confirm`);
+    return apiClient.post(`/payments/${id}/confirm`);
   },
 
   // Получение статистики платежей
@@ -52,7 +52,7 @@ export const paymentsApi = {
     dateFrom?: string;
     dateTo?: string;
   }) {
-    return apiClient.get('/api/payments/stats', params);
+    return apiClient.get('/payments/stats', params);
   },
 
   // Экспорт платежей
@@ -61,6 +61,6 @@ export const paymentsApi = {
     dateTo?: string;
     format?: 'csv' | 'xlsx';
   }) {
-    return apiClient.get('/api/payments/export', params);
+    return apiClient.get('/payments/export', params);
   },
 };

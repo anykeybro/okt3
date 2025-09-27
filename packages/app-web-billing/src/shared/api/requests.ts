@@ -16,32 +16,32 @@ export const requestsApi = {
     status?: string;
     assignedTo?: string;
   }) {
-    return apiClient.get<PaginatedResponse<Request>>('/api/requests', params);
+    return apiClient.get<PaginatedResponse<Request>>('/requests', params);
   },
 
   // Получение заявки по ID
   async getRequest(id: string) {
-    return apiClient.get<Request>(`/api/requests/${id}`);
+    return apiClient.get<Request>(`/requests/${id}`);
   },
 
   // Обновление статуса заявки
   async updateRequestStatus(id: string, data: UpdateRequestStatusRequest) {
-    return apiClient.patch<Request>(`/api/requests/${id}/status`, data);
+    return apiClient.patch<Request>(`/requests/${id}/status`, data);
   },
 
   // Назначение заявки на исполнителя
   async assignRequest(id: string, assignedTo: string) {
-    return apiClient.patch<Request>(`/api/requests/${id}/assign`, { assignedTo });
+    return apiClient.patch<Request>(`/requests/${id}/assign`, { assignedTo });
   },
 
   // Добавление комментария к заявке
   async addComment(id: string, comment: string) {
-    return apiClient.post(`/api/requests/${id}/comments`, { comment });
+    return apiClient.post(`/requests/${id}/comments`, { comment });
   },
 
   // Получение комментариев к заявке
   async getComments(id: string) {
-    return apiClient.get(`/api/requests/${id}/comments`);
+    return apiClient.get(`/requests/${id}/comments`);
   },
 
   // Создание лицевого счета из заявки
@@ -52,11 +52,11 @@ export const requestsApi = {
     blockThreshold: number;
     deviceId?: string;
   }) {
-    return apiClient.post(`/api/requests/${requestId}/create-account`, accountData);
+    return apiClient.post(`/requests/${requestId}/create-account`, accountData);
   },
 
   // Получение статистики заявок
   async getRequestsStats() {
-    return apiClient.get('/api/requests/stats');
+    return apiClient.get('/requests/stats');
   },
 };

@@ -80,17 +80,23 @@ class ApiClient {
 
   // GET запрос
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
-    const url = new URL(endpoint, this.baseUrl);
+    let finalEndpoint = endpoint;
     
     if (params) {
+      const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          url.searchParams.append(key, String(value));
+          searchParams.append(key, String(value));
         }
       });
+      
+      const queryString = searchParams.toString();
+      if (queryString) {
+        finalEndpoint += (endpoint.includes('?') ? '&' : '?') + queryString;
+      }
     }
 
-    return this.request<T>(url.pathname + url.search);
+    return this.request<T>(finalEndpoint);
   }
 
   // POST запрос

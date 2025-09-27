@@ -8,17 +8,17 @@ import type { DashboardStats, RecentActivity } from '../types/api';
 export const dashboardApi = {
   // Получение основной статистики
   async getStats() {
-    return apiClient.get<DashboardStats>('/api/dashboard/stats');
+    return apiClient.get<DashboardStats>('/dashboard/stats');
   },
 
   // Получение последней активности
   async getRecentActivity() {
-    return apiClient.get<RecentActivity>('/api/dashboard/recent-activity');
+    return apiClient.get<RecentActivity>('/dashboard/activity');
   },
 
   // Получение данных для графиков
   async getChartData(type: string, period: string) {
-    return apiClient.get(`/api/dashboard/charts/${type}`, { period });
+    return apiClient.get(`/dashboard/charts/${type}`, { period });
   },
 
   // Получение метрик по периоду
@@ -27,6 +27,6 @@ export const dashboardApi = {
     dateTo: string;
     metrics: string[];
   }) {
-    return apiClient.get('/api/dashboard/metrics', params);
+    return apiClient.get('/dashboard/metrics', params);
   },
 };

@@ -177,92 +177,22 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  # MongoDB Primary (реплика 1)
-  mongodb-primary:
+  # MongoDB (standalone для разработки)
+  mongodb:
     image: mongo:7.0
-    container_name: mongodb-primary-dev
+    container_name: mongodb-dev
     restart: unless-stopped
-    command: >
-      bash -c "
-        cp /tmp/mongodb-keyfile /data/mongodb-keyfile &&
-        chmod 400 /data/mongodb-keyfile &&
-        chown mongodb:mongodb /data/mongodb-keyfile &&
-        exec mongod --replSet ${MONGODB_REPLICA_SET_NAME} --keyFile /data/mongodb-keyfile --bind_ip_all
-      "
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
     volumes:
-      - mongodb_primary_data:/data/db
-      - ./mongodb-keyfile:/tmp/mongodb-keyfile:ro
+      - mongodb_data:/data/db
+      - ./scripts/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
     networks:
       - zabbix-net
     ports:
       - "27017:27017"
-
-  # MongoDB Secondary (реплика 2)
-  mongodb-secondary:
-    image: mongo:7.0
-    container_name: mongodb-secondary-dev
-    restart: unless-stopped
-    command: >
-      bash -c "
-        cp /tmp/mongodb-keyfile /data/mongodb-keyfile &&
-        chmod 400 /data/mongodb-keyfile &&
-        chown mongodb:mongodb /data/mongodb-keyfile &&
-        exec mongod --replSet ${MONGODB_REPLICA_SET_NAME} --keyFile /data/mongodb-keyfile --bind_ip_all
-      "
-    volumes:
-      - mongodb_secondary_data:/data/db
-      - ./mongodb-keyfile:/tmp/mongodb-keyfile:ro
-    networks:
-      - zabbix-net
-    ports:
-      - "27018:27017"
-    depends_on:
-      - mongodb-primary
-
-  # MongoDB Arbiter (арбитр для реплики)
-  mongodb-arbiter:
-    image: mongo:7.0
-    container_name: mongodb-arbiter-dev
-    restart: unless-stopped
-    command: >
-      bash -c "
-        cp /tmp/mongodb-keyfile /data/mongodb-keyfile &&
-        chmod 400 /data/mongodb-keyfile &&
-        chown mongodb:mongodb /data/mongodb-keyfile &&
-        exec mongod --replSet ${MONGODB_REPLICA_SET_NAME} --keyFile /data/mongodb-keyfile --bind_ip_all
-      "
-    volumes:
-      - mongodb_arbiter_data:/data/db
-      - ./mongodb-keyfile:/tmp/mongodb-keyfile:ro
-    networks:
-      - zabbix-net
-    ports:
-      - "27019:27017"
-    depends_on:
-      - mongodb-primary
-
-  # MongoDB Replica Set Initializer
-  mongodb-setup:
-    image: mongo:7.0
-    container_name: mongodb-setup-dev
-    restart: "no"
-    networks:
-      - zabbix-net
-    volumes:
-      - ./scripts:/scripts:ro
-    depends_on:
-      - mongodb-primary
-      - mongodb-secondary
-      - mongodb-arbiter
-    command: >
-      bash -c "
-        sleep 15 &&
-        mongosh --host mongodb-primary:27017 -u ${MONGODB_ROOT_USERNAME} -p ${MONGODB_ROOT_PASSWORD} --authenticationDatabase admin /scripts/init-mongodb-replica.js
-      "
 
   # App Server Proxy - nginx прокси для локального app-server
   app-server:
@@ -349,9 +279,7 @@ volumes:
   nginx_logs:
   grafana_data:
   grafana_logs:
-  mongodb_primary_data:
-  mongodb_secondary_data:
-  mongodb_arbiter_data:
+  mongodb_data:
   zookeeper_data:
   zookeeper_logs:
   kafka_data:

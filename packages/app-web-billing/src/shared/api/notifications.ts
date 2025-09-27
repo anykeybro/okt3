@@ -18,12 +18,12 @@ export const notificationsApi = {
     channel?: string;
     status?: string;
   }) {
-    return apiClient.get<PaginatedResponse<Notification>>('/api/notifications', params);
+    return apiClient.get<PaginatedResponse<Notification>>('/notifications', params);
   },
 
   // Получение уведомления по ID
   async getNotification(id: string) {
-    return apiClient.get<Notification>(`/api/notifications/${id}`);
+    return apiClient.get<Notification>(`/notifications/${id}`);
   },
 
   // Отправка уведомления
@@ -33,12 +33,12 @@ export const notificationsApi = {
     channel?: string;
     message?: string;
   }) {
-    return apiClient.post<Notification>('/api/notifications/send', data);
+    return apiClient.post<Notification>('/notifications/send', data);
   },
 
   // Повторная отправка уведомления
   async resendNotification(id: string) {
-    return apiClient.post(`/api/notifications/${id}/resend`);
+    return apiClient.post(`/notifications/${id}/resend`);
   },
 
   // Получение шаблонов уведомлений
@@ -46,12 +46,12 @@ export const notificationsApi = {
     type?: string;
     channel?: string;
   }) {
-    return apiClient.get<PaginatedResponse<NotificationTemplate>>('/api/notification-templates', params);
+    return apiClient.get<PaginatedResponse<NotificationTemplate>>('/notification-templates', params);
   },
 
   // Получение шаблона по ID
   async getTemplate(id: string) {
-    return apiClient.get<NotificationTemplate>(`/api/notification-templates/${id}`);
+    return apiClient.get<NotificationTemplate>(`/notification-templates/${id}`);
   },
 
   // Создание шаблона
@@ -60,7 +60,7 @@ export const notificationsApi = {
     channel: string;
     template: string;
   }) {
-    return apiClient.post<NotificationTemplate>('/api/notification-templates', data);
+    return apiClient.post<NotificationTemplate>('/notification-templates', data);
   },
 
   // Обновление шаблона
@@ -68,12 +68,12 @@ export const notificationsApi = {
     template?: string;
     isActive?: boolean;
   }) {
-    return apiClient.put<NotificationTemplate>(`/api/notification-templates/${id}`, data);
+    return apiClient.put<NotificationTemplate>(`/notification-templates/${id}`, data);
   },
 
   // Удаление шаблона
   async deleteTemplate(id: string) {
-    return apiClient.delete(`/api/notification-templates/${id}`);
+    return apiClient.delete(`/notification-templates/${id}`);
   },
 
   // Тестирование отправки уведомления
@@ -83,11 +83,11 @@ export const notificationsApi = {
     channel: string;
     template: string;
   }) {
-    return apiClient.post('/api/notifications/test', data);
+    return apiClient.post('/notifications/test', data);
   },
 
   // Получение статистики уведомлений
   async getNotificationsStats() {
-    return apiClient.get('/api/notifications/stats');
+    return apiClient.get('/notifications/stats');
   },
 };
